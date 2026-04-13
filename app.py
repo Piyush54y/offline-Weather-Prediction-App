@@ -1,5 +1,5 @@
 # ==========================================
-# 🌦 AI WEATHER ULTRA PRO (MOBILE UI STYLE)
+# 🌦 AI WEATHER PRO (AQI + PREDICTION)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -17,7 +17,7 @@ st.set_page_config(page_title="Weather Pro", layout="wide")
 API_KEY = "efd7a881ace6419480e100155251006"
 
 # ==========================================
-# ULTRA CSS (MOBILE APP STYLE 🔥)
+# CSS (PREMIUM UI)
 # ==========================================
 st.markdown("""
 <style>
@@ -27,58 +27,32 @@ st.markdown("""
     animation: gradientBG 12s ease infinite;
     color:white;
 }
-
-/* Background animation */
 @keyframes gradientBG {
     0% {background-position:0% 50%;}
     50% {background-position:100% 50%;}
     100% {background-position:0% 50%;}
 }
-
-/* Header */
 .header {
     text-align:center;
-    font-size:50px;
+    font-size:45px;
     font-weight:bold;
     color:#00f2ff;
-    text-shadow:0 0 20px cyan;
 }
-
-/* Big weather display */
 .big {
     text-align:center;
     font-size:60px;
     font-weight:bold;
 }
-
-/* Glass cards */
 .card {
     background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(10px);
     padding:20px;
-    border-radius:20px;
+    border-radius:15px;
     text-align:center;
-    transition:0.3s;
-}
-
-.card:hover {
-    transform:scale(1.05);
-    box-shadow:0 0 25px cyan;
-}
-
-/* Buttons */
-.stButton>button {
-    background: linear-gradient(45deg,#00f2ff,#0072ff);
-    color:white;
-    border-radius:10px;
-    font-weight:bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# TITLE
-# ==========================================
 st.markdown('<div class="header">🌦 Weather AI PRO</div>', unsafe_allow_html=True)
 
 # ==========================================
@@ -108,39 +82,36 @@ city_coords = {
     "Delhi": (28.6139, 77.2090),
     "Mumbai": (19.0760, 72.8777),
     "Bangalore": (12.9716, 77.5946),
-    "Patna": (25.5941, 85.1376),
-    "Kolkata": (22.5726, 88.3639)
+    "Patna": (25.5941, 85.1376)
 }
 
 # ==========================================
-# WEATHER API
+# WEATHER + AQI API
 # ==========================================
-def get_weather(lat, lon):
-    url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}"
+def get_weather_aqi(lat, lon):
+    url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}&aqi=yes"
     data = requests.get(url).json()
 
-    return (
-        data["current"]["temp_c"],
-        data["current"]["humidity"],
-        data["current"]["pressure_mb"],
-        data["current"]["wind_kph"],
-        data["current"].get("precip_mm", 0)
-    )
+    temp = data["current"]["temp_c"]
+    hum = data["current"]["humidity"]
+    pres = data["current"]["pressure_mb"]
+    wind = data["current"]["wind_kph"]
+    rainf = data["current"].get("precip_mm", 0)
+
+    aqi = data["current"]["air_quality"]["pm2_5"]
+
+    return temp, hum, pres, wind, rainf, aqi
 
 # ==========================================
-# FORECAST
+# AQI STATUS
 # ==========================================
-def get_forecast(lat, lon):
-    url = f"http://api.weatherapi.com/v1/forecast.json?key={API_KEY}&q={lat},{lon}&days=7"
-    data = requests.get(url).json()
-
-    days, temps = [], []
-
-    for d in data["forecast"]["forecastday"]:
-        days.append(d["date"])
-        temps.append(d["day"]["avgtemp_c"])
-
-    return days, temps
+def aqi_status(aqi):
+    if aqi <= 50:
+        return "🟢 Good"
+    elif aqi <= 100:
+        return "🟡 Moderate"
+    else:
+        return "🔴 Poor"
 
 # ==========================================
 # CITY SELECT
@@ -149,13 +120,13 @@ city = st.selectbox("📍 Select City", list(city_coords.keys()))
 lat, lon = city_coords[city]
 
 # ==========================================
-# MAIN BUTTON
+# BUTTON
 # ==========================================
 if st.button("🚀 Get Weather"):
 
-    temp, hum, pres, wind, rainf = get_weather(lat, lon)
+    temp, hum, pres, wind, rainf, aqi = get_weather_aqi(lat, lon)
 
-    # ICON + STATUS
+    # ICON
     if rainf > 1:
         icon = "🌧"
         status = "Rainy"
@@ -173,13 +144,17 @@ if st.button("🚀 Get Weather"):
     """, unsafe_allow_html=True)
 
     # CARDS
-    c1,c2,c3,c4,c5 = st.columns(5)
+    c1,c2,c3,c4,c5,c6 = st.columns(6)
 
     c1.markdown(f'<div class="card">🌡<br>{temp}°C</div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="card">💧<br>{hum}%</div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="card">📈<br>{pres}</div>', unsafe_allow_html=True)
     c4.markdown(f'<div class="card">🌬<br>{wind}</div>', unsafe_allow_html=True)
     c5.markdown(f'<div class="card">🌧<br>{rainf}</div>', unsafe_allow_html=True)
+    c6.markdown(f'<div class="card">🌫 AQI<br>{aqi:.1f}</div>', unsafe_allow_html=True)
+
+    # AQI STATUS
+    st.markdown(f"### 🌫 Air Quality: {aqi_status(aqi)}")
 
     # ML PREDICTION
     data = scale_input(temp, hum, pres, wind, rainf)
@@ -198,34 +173,19 @@ if st.button("🚀 Get Weather"):
     st.write(f"Rain Probability: {prob*100:.2f}%")
 
     # EXPLAINABLE AI
-    st.markdown("### 🧠 Why Prediction?")
+    st.markdown("### 🧠 Why?")
     if hum > 70:
         st.write("✔ High humidity → rain chance")
     if pres < 1000:
         st.write("✔ Low pressure → rainfall likely")
 
-    # FORECAST
-    st.markdown("### 📅 7-Day Forecast")
-
-    days, temps = get_forecast(lat, lon)
-    st.line_chart(temps)
-
     # GRAPH
     st.markdown("### 📊 Weather Insights")
 
     fig, ax = plt.subplots()
-    ax.plot(["Temp","Humidity","Pressure","Wind","Rain"],
-            [temp, hum, pres/10, wind, rainf], marker='o')
+    ax.plot(["Temp","Humidity","Pressure","Wind","Rain","AQI"],
+            [temp, hum, pres/10, wind, rainf, aqi], marker='o')
     st.pyplot(fig)
-
-    # DOWNLOAD
-    df = pd.DataFrame({
-        "Temp":[temp],
-        "Humidity":[hum],
-        "Prediction":[result[0]]
-    })
-
-    st.download_button("📥 Download Report", df.to_csv(), "weather.csv")
 
 # ==========================================
 # LIVE MODE
@@ -237,4 +197,4 @@ if st.checkbox("🔄 Live Mode"):
 # ==========================================
 # FOOTER
 # ==========================================
-st.write("⚡ AI + ML + Real-Time Weather | Premium UI")
+st.write("⚡ ML + Real-Time Weather + AQI | Premium UI")
