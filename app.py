@@ -81,7 +81,7 @@ def scale_input(temp, hum, pres, wind, rainf):
 # TITLE
 # ==========================================
 st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
-st.write("### ⚡ Lightweight Offline ML Model (Random Forest ~93%)")
+st.write("### ⚡ Lightweight Offline Weather Prediction ML Model ")
 
 # ==========================================
 # MAIN BUTTON
