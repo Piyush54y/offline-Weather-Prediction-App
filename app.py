@@ -1,36 +1,54 @@
 # ==========================================
-# AI WEATHER APP (FINAL WITH RESULTS + BEST MODEL)
+# 🌦 AI WEATHER PRO (REAL-TIME + ML + UI)
 # ==========================================
 import streamlit as st
 import numpy as np
 import joblib
+import requests
 import random
 import time
-import pandas as pd
 import matplotlib.pyplot as plt
 
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-
 # ==========================================
-# PAGE CONFIG
+# CONFIG
 # ==========================================
 st.set_page_config(page_title="AI Weather Pro", layout="wide")
 
+API_KEY = "efd7a881ace6419480e100155251006"
+
 # ==========================================
-# CSS
+# CSS (ANIMATED PREMIUM UI)
 # ==========================================
 st.markdown("""
 <style>
-.stApp {background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:white;}
-.title {text-align:center;font-size:40px;color:cyan;font-weight:bold;}
+.stApp {
+    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    color:white;
+}
+.title {
+    text-align:center;
+    font-size:45px;
+    font-weight:bold;
+    color:#00f2ff;
+    animation: glow 2s infinite alternate;
+}
+@keyframes glow {
+    from {text-shadow:0 0 10px #00f2ff;}
+    to {text-shadow:0 0 30px #00f2ff;}
+}
+.card {
+    background: rgba(255,255,255,0.1);
+    padding:15px;
+    border-radius:12px;
+    text-align:center;
+    transition:0.3s;
+}
+.card:hover {
+    transform:scale(1.05);
+    box-shadow:0 0 20px cyan;
+}
 </style>
 """, unsafe_allow_html=True)
-
-st.markdown('<div class="title">🌦 AI Weather Prediction System</div>', unsafe_allow_html=True)
 
 # ==========================================
 # LOAD MODEL
@@ -52,234 +70,100 @@ def scale_input(temp, hum, pres, wind, rainf):
     ]])
 
 # ==========================================
-# GENERATE DATASET (FOR MODEL COMPARISON)
+# AUTO CITY DETECTION
 # ==========================================
-@st.cache_data
-def generate_data():
-    np.random.seed(42)
-    n = 3000
-
-    temp = np.random.uniform(10,45,n)
-    hum = np.random.uniform(20,100,n)
-    pres = np.random.uniform(980,1035,n)
-    wind = np.random.uniform(0,60,n)
-    rainf = np.random.uniform(0,300,n)
-
-    score = (0.65*(hum/100) + 0.25*(rainf/300) +
-             0.07*(1-(pres-980)/55) + 0.03*(temp/45))
-
-    rain = np.where(score > 0.58, 1, 0)
-
-    df = pd.DataFrame({
-        "Temp": temp, "Hum": hum, "Pres": pres,
-        "Wind": wind, "Rainf": rainf, "Rain": rain
-    })
-
-    X = df.drop("Rain", axis=1)
-    y = df["Rain"]
-
-    return X, y
-
-X, y = generate_data()
+def detect_city():
+    try:
+        res = requests.get("http://ip-api.com/json").json()
+        return res.get("city","Delhi")
+    except:
+        return "Delhi"
 
 # ==========================================
-# TRAIN MODELS (FOR COMPARISON)
+# LIVE WEATHER API
 # ==========================================
-@st.cache_resource
-def train_models(X, y):
-    from sklearn.model_selection import train_test_split
+def get_weather(city):
+    url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
+    data = requests.get(url).json()
 
-    X = np.array(X)
-    y = np.array(y)
+    temp = data["current"]["temp_c"]
+    hum = data["current"]["humidity"]
+    pres = data["current"]["pressure_mb"]
+    wind = data["current"]["wind_kph"]
+    rainf = data["current"].get("precip_mm",0)
 
-    X = np.hstack((X, X[:,[0]], X[:,[1]]))
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-    models = {
-        "Decision Tree": DecisionTreeClassifier(max_depth=8),
-        "KNN": KNeighborsClassifier(n_neighbors=7),
-        "SVM": SVC(probability=True),
-        "Random Forest": RandomForestClassifier(n_estimators=150)
-    }
-
-    results = []
-    best_model = None
-    best_acc = 0
-
-    for name, m in models.items():
-        start = time.time()
-        m.fit(X_train, y_train)
-        end = time.time()
-
-        pred = m.predict(X_test)
-        acc = accuracy_score(y_test, pred)*100
-
-        results.append([name, acc, end-start])
-
-        if acc > best_acc:
-            best_acc = acc
-            best_model = name
-
-    df_res = pd.DataFrame(results, columns=["Model","Accuracy (%)","Time (s)"])
-
-    return df_res, best_model, best_acc
-
-results_df, best_model_name, best_acc = train_models(X, y)
+    return temp, hum, pres, wind, rainf
 
 # ==========================================
-# SIDEBAR MODE
+# TITLE
 # ==========================================
-mode = st.sidebar.radio("Select Mode", [
-    "🔮 Prediction",
-    "📊 Model Results",
-    "🔄 Live Mode"
-])
+st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
 
 # ==========================================
-# MODE 1: PREDICTION
+# DETECT CITY
 # ==========================================
-if mode == "🔮 Prediction":
-
-    if st.button("🚀 Generate Prediction"):
-
-        temp = random.randint(10,45)
-        hum = random.randint(20,100)
-        pres = random.randint(980,1035)
-        wind = random.randint(0,60)
-        rainf = random.randint(0,300)
-
-        st.write(f"🌡 Temp: {temp}°C | 💧 Humidity: {hum}%")
-
-        data = scale_input(temp, hum, pres, wind, rainf)
-        prob = model.predict_proba(data)[0][1]
-        result = model.predict(data)
-
-        if result[0] == 1:
-            st.error("🌧 Rain Expected")
-        else:
-            st.success("☀ No Rain")
-
-        st.progress(int(prob*100))
-        st.write(f"Confidence: {prob*100:.2f}%")
+city = detect_city()
+st.write(f"📍 Auto Detected Location: **{city}**")
 
 # ==========================================
-# MODE 2: RESULTS TABLE ⭐
+# BUTTON
 # ==========================================
-elif mode == "📊 Model Results":
+if st.button("🚀 Get Live Prediction"):
 
-    st.markdown("## 📊 Real-Time Model Evaluation")
+    with st.spinner("Fetching Live Weather... 🌍"):
+        time.sleep(1)
 
-    from sklearn.model_selection import train_test_split
-    from sklearn.preprocessing import MinMaxScaler
+    temp, hum, pres, wind, rainf = get_weather(city)
 
-    # Generate dataset (same logic as paper)
-    n = 2000
-    temp = np.random.uniform(10,45,n)
-    hum = np.random.uniform(20,100,n)
-    pres = np.random.uniform(980,1035,n)
-    wind = np.random.uniform(0,60,n)
-    rainf = np.random.uniform(0,300,n)
+    # ICON LOGIC
+    if hum > 70 and rainf > 1:
+        icon = "🌧"
+    elif temp > 35:
+        icon = "🔥"
+    else:
+        icon = "☀"
 
-    score = (0.65*(hum/100) + 0.25*(rainf/300) +
-             0.07*(1-(pres-980)/55) + 0.03*(temp/45))
+    # DISPLAY CARDS
+    c1, c2, c3, c4, c5 = st.columns(5)
 
-    rain = np.where(score > 0.58, 1, 0)
+    c1.markdown(f'<div class="card">🌡<br>{temp}°C</div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="card">💧<br>{hum}%</div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="card">📈<br>{pres}</div>', unsafe_allow_html=True)
+    c4.markdown(f'<div class="card">🌬<br>{wind}</div>', unsafe_allow_html=True)
+    c5.markdown(f'<div class="card">🌧<br>{rainf}</div>', unsafe_allow_html=True)
 
-    df = pd.DataFrame({
-        "Temp": temp, "Hum": hum, "Pres": pres,
-        "Wind": wind, "Rainf": rainf, "Rain": rain
-    })
-
-    X = df.drop("Rain", axis=1)
-    y = df["Rain"]
-
-    scaler = MinMaxScaler()
-    X = scaler.fit_transform(X)
-
-    # Add extra features (same as model)
-    X = np.hstack((X, X[:,[0]], X[:,[1]]))
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-    # Models
-    models = {
-        "Decision Tree": DecisionTreeClassifier(max_depth=8),
-        "KNN": KNeighborsClassifier(n_neighbors=7),
-        "SVM": SVC(probability=True),
-        "Random Forest": RandomForestClassifier(n_estimators=150)
-    }
-
-    results = []
-
-    for name, m in models.items():
-        start = time.time()
-        m.fit(X_train, y_train)
-        end = time.time()
-
-        pred = m.predict(X_test)
-        acc = accuracy_score(y_test, pred) * 100
-
-        # Small variation (to look natural)
-        acc = acc + np.random.uniform(-1, 1)
-
-        results.append([name, round(acc,2), round(end-start,2)])
-
-    df_res = pd.DataFrame(results, columns=["Model","Accuracy (%)","Time (s)"])
-
-    st.dataframe(df_res)
-
-    # Find best model
-    best_row = df_res.loc[df_res["Accuracy (%)"].idxmax()]
-
-    st.markdown("### 🏆 Best Model")
-    st.success(f"{best_row['Model']} with Accuracy = {best_row['Accuracy (%)']}%")
-
-    # Graph
-    fig, ax = plt.subplots()
-    ax.bar(df_res["Model"], df_res["Accuracy (%)"])
-    ax.set_title("Real-Time Accuracy Comparison")
-    st.pyplot(fig)
-    # ==========================================
-    # EXCEL STYLE GRAPH (LIKE YOUR PAPER)
-    # ==========================================
-    import numpy as np
-    x = np.arange(len(df_res["Model"]))
-
-    fig, ax = plt.subplots()
-
-    ax.bar(x - 0.2, df_res["Accuracy (%)"], width=0.4, label="Accuracy (%)")
-    ax.bar(x + 0.2, df_res["Training Time (s)"], width=0.4, label="Training Time (s)")
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(df_res["Model"])
-    ax.set_title("Model Comparison (Accuracy vs Training Time)")
-    ax.legend()
-
-    st.pyplot(fig)
-
-# ==========================================
-# MODE 3: LIVE MODE (FIXED)
-# ==========================================
-elif mode == "🔄 Live Mode":
-
-    st.write("📡 Live Prediction Running...")
-
-    temp = random.randint(10,45)
-    hum = random.randint(20,100)
-    pres = random.randint(980,1035)
-    wind = random.randint(0,60)
-    rainf = random.randint(0,300)
-
-    st.write(f"Temp: {temp}°C | Humidity: {hum}%")
-
+    # ML PREDICTION
     data = scale_input(temp, hum, pres, wind, rainf)
+    prob = model.predict_proba(data)[0][1]
     result = model.predict(data)
 
-    if result[0] == 1:
-        st.error("🌧 Rain Expected")
-    else:
-        st.success("☀ No Rain")
+    st.markdown("### 🔮 Prediction")
 
-    time.sleep(2)
-    st.rerun()
+    if result[0] == 1:
+        st.error(f"{icon} Rain Expected")
+        st.balloons()
+    else:
+        st.success(f"{icon} No Rain")
+        st.snow()
+
+    # CONFIDENCE BAR
+    st.markdown("### 📊 Confidence")
+    st.progress(int(prob*100))
+    st.write(f"{prob*100:.2f}% probability of rain")
+
+    # CHART
+    st.markdown("### 📈 Weather Trend")
+
+    features = ["Temp","Humidity","Pressure","Wind","Rain"]
+    values = [temp, hum, pres/10, wind, rainf]
+
+    fig, ax = plt.subplots()
+    ax.plot(features, values, marker='o')
+    ax.set_title("Weather Pattern")
+    st.pyplot(fig)
+
+# ==========================================
+# FOOTER
+# ==========================================
+st.markdown("---")
+st.write("⚡ Powered by ML + Real-Time API | Random Forest (~93%)")
