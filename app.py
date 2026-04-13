@@ -1,5 +1,5 @@
 # ==========================================
-# 🌦 AI WEATHER PRO (FINAL STABLE VERSION)
+# 🌦 AI WEATHER PRO (LAT-LONG ACCURATE VERSION)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -16,7 +16,7 @@ st.set_page_config(page_title="AI Weather Pro", layout="wide")
 API_KEY = "efd7a881ace6419480e100155251006"
 
 # ==========================================
-# CSS (CLEAN + ANIMATED)
+# CSS (PREMIUM UI)
 # ==========================================
 st.markdown("""
 <style>
@@ -27,20 +27,14 @@ st.markdown("""
 .title {
     text-align:center;
     font-size:40px;
-    font-weight:bold;
     color:#00f2ff;
-    animation: glow 2s infinite alternate;
-}
-@keyframes glow {
-    from {text-shadow:0 0 10px #00f2ff;}
-    to {text-shadow:0 0 25px #00f2ff;}
+    font-weight:bold;
 }
 .card {
     background: rgba(255,255,255,0.08);
     padding:15px;
     border-radius:10px;
     text-align:center;
-    margin:5px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -70,20 +64,21 @@ def scale_input(temp, hum, pres, wind, rainf):
     ]])
 
 # ==========================================
-# AUTO DETECT (FALLBACK ONLY)
+# CITY → LAT LONG MAP (ACCURATE)
 # ==========================================
-def detect_city():
-    try:
-        res = requests.get("http://ip-api.com/json").json()
-        return res.get("city", "Delhi")
-    except:
-        return "Delhi"
+city_coords = {
+    "Gurugram": (28.4595, 77.0266),
+    "Delhi": (28.6139, 77.2090),
+    "Mumbai": (19.0760, 72.8777),
+    "Bangalore": (12.9716, 77.5946),
+    "Patna": (25.5941, 85.1376)
+}
 
 # ==========================================
-# WEATHER API
+# WEATHER FUNCTION (LAT-LONG)
 # ==========================================
-def get_weather(city):
-    url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
+def get_weather(lat, lon):
+    url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}"
     data = requests.get(url).json()
 
     temp = data["current"]["temp_c"]
@@ -95,40 +90,27 @@ def get_weather(city):
     return temp, hum, pres, wind, rainf
 
 # ==========================================
-# LOCATION SELECTION (FIXED 🔥)
+# LOCATION SELECT
 # ==========================================
-st.markdown("### 📍 Select Your Location")
+st.markdown("### 📍 Select Location")
 
-auto_city = detect_city()
+city = st.selectbox("Choose City", list(city_coords.keys()))
 
-popular_cities = [
-    "Gurugram", "Delhi", "Mumbai", "Bangalore",
-    "Patna", "Kolkata", "Hyderabad"
-]
+lat, lon = city_coords[city]
 
-city = st.selectbox(
-    "Choose city (or type manually below):",
-    popular_cities
-)
-
-custom_city = st.text_input("Or enter your city manually:", value=city)
-
-if custom_city:
-    city = custom_city
-
-st.write(f"📍 Using Location: **{city}**")
+st.write(f"📍 Using: **{city}** (Lat: {lat}, Lon: {lon})")
 
 # ==========================================
-# MAIN BUTTON
+# BUTTON
 # ==========================================
-if st.button("🚀 Get Live Prediction"):
+if st.button("🚀 Get Accurate Prediction"):
 
-    with st.spinner("Fetching Live Weather... 🌍"):
+    with st.spinner("Fetching Accurate Weather... 🌍"):
         time.sleep(1)
 
-    temp, hum, pres, wind, rainf = get_weather(city)
+    temp, hum, pres, wind, rainf = get_weather(lat, lon)
 
-    # ICON LOGIC
+    # ICON
     if hum > 70 and rainf > 1:
         icon = "🌧"
     elif temp > 35:
@@ -136,7 +118,7 @@ if st.button("🚀 Get Live Prediction"):
     else:
         icon = "☀"
 
-    # DISPLAY CARDS
+    # CARDS
     c1, c2, c3, c4, c5 = st.columns(5)
 
     c1.markdown(f'<div class="card">🌡<br>{temp}°C</div>', unsafe_allow_html=True)
@@ -179,4 +161,4 @@ if st.button("🚀 Get Live Prediction"):
 # FOOTER
 # ==========================================
 st.markdown("---")
-st.write("⚡ Powered by ML + Real-Time API | Random Forest ")
+st.write("⚡ Accurate Location-Based ML Prediction | Random Forest (~93%)")
