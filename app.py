@@ -107,7 +107,7 @@ st.markdown("""
 # ==========================================
 # TITLE
 # ==========================================
-st.markdown('<div class="header">🌦 Weather AI PRO</div>', unsafe_allow_html=True)
+st.markdown('<div class="header">🌦 Weather Prediction PRO</div>', unsafe_allow_html=True)
 
 # ==========================================
 # LOAD MODEL
