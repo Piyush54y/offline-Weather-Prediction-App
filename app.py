@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 # ==========================================
 # CONFIG
 # ==========================================
-st.set_page_config(page_title="Weather AI PRO", layout="wide")
+st.set_page_config(page_title=" ML + AQI + Weather Prediction ", layout="wide")
 
 API_KEY = "efd7a881ace6419480e100155251006"
 
@@ -268,4 +268,4 @@ if st.checkbox("🔄 Live Mode"):
 # ==========================================
 # FOOTER
 # ==========================================
-st.write("⚡ Animated UI + ML + AQI | Final Pro Version")
+st.write("⚡Weather Prediction + ML + AQI | Final Pro Version")
