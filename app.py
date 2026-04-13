@@ -1,5 +1,5 @@
 # ==========================================
-# 🌦 AI WEATHER PRO (ULTIMATE VERSION)
+# 🌦 AI WEATHER PRO (CITY SELECT VERSION)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -7,7 +7,6 @@ import joblib
 import requests
 import time
 import matplotlib.pyplot as plt
-import pandas as pd
 
 # ==========================================
 # CONFIG
@@ -17,7 +16,7 @@ st.set_page_config(page_title="AI Weather Pro", layout="wide")
 API_KEY = "efd7a881ace6419480e100155251006"
 
 # ==========================================
-# CSS (ULTRA UI)
+# CSS (COOL UI)
 # ==========================================
 st.markdown("""
 <style>
@@ -27,25 +26,20 @@ st.markdown("""
 }
 .title {
     text-align:center;
-    font-size:50px;
+    font-size:45px;
     color:#00f2ff;
     font-weight:bold;
-    animation: glow 2s infinite alternate;
-}
-@keyframes glow {
-    from {text-shadow:0 0 10px cyan;}
-    to {text-shadow:0 0 30px cyan;}
 }
 .card {
     background: rgba(255,255,255,0.1);
     padding:15px;
-    border-radius:15px;
+    border-radius:12px;
     text-align:center;
     transition:0.3s;
 }
 .card:hover {
     transform:scale(1.05);
-    box-shadow:0 0 25px cyan;
+    box-shadow:0 0 20px cyan;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -53,7 +47,7 @@ st.markdown("""
 # ==========================================
 # TITLE
 # ==========================================
-st.markdown('<div class="title">🌦 AI Weather PRO 🌍</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
 
 # ==========================================
 # LOAD MODEL
@@ -75,16 +69,31 @@ def scale_input(temp, hum, pres, wind, rainf):
     ]])
 
 # ==========================================
-# GPS DETECTION (BROWSER BASED)
+# CITY LIST (WITH COORDINATES)
 # ==========================================
-st.markdown("### 📍 Detect Location")
-
-coords = st.text_input("Enter Latitude,Longitude (Auto GPS or Google Maps)", "28.4595,77.0266")
-
-lat, lon = map(float, coords.split(","))
+city_coords = {
+    "Gurugram": (28.4595, 77.0266),
+    "Delhi": (28.6139, 77.2090),
+    "Mumbai": (19.0760, 72.8777),
+    "Bangalore": (12.9716, 77.5946),
+    "Patna": (25.5941, 85.1376),
+    "Kolkata": (22.5726, 88.3639),
+    "Hyderabad": (17.3850, 78.4867)
+}
 
 # ==========================================
-# WEATHER API
+# CITY SELECT
+# ==========================================
+st.markdown("### 📍 Select City")
+
+city = st.selectbox("Choose your location:", list(city_coords.keys()))
+
+lat, lon = city_coords[city]
+
+st.write(f"📍 Selected: **{city}**")
+
+# ==========================================
+# WEATHER FUNCTION
 # ==========================================
 def get_weather(lat, lon):
     url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}"
@@ -99,16 +108,11 @@ def get_weather(lat, lon):
     return temp, hum, pres, wind, rainf
 
 # ==========================================
-# MAP DISPLAY
-# ==========================================
-st.map(pd.DataFrame({"lat":[lat],"lon":[lon]}))
-
-# ==========================================
 # BUTTON
 # ==========================================
-if st.button("🚀 Predict Weather"):
+if st.button("🚀 Get Weather Prediction"):
 
-    with st.spinner("🌍 Fetching Live Weather..."):
+    with st.spinner("Fetching live weather... 🌍"):
         time.sleep(1)
 
     temp, hum, pres, wind, rainf = get_weather(lat, lon)
@@ -123,7 +127,7 @@ if st.button("🚀 Predict Weather"):
     else:
         icon = "☀"
 
-    # DISPLAY CARDS
+    # CARDS
     c1, c2, c3, c4, c5 = st.columns(5)
 
     c1.markdown(f'<div class="card">🌡 {temp}°C</div>', unsafe_allow_html=True)
@@ -140,26 +144,26 @@ if st.button("🚀 Predict Weather"):
     st.markdown("## 🔮 Prediction Result")
 
     if result[0] == 1:
-        st.error(f"{icon} 🌧 Rain Expected")
+        st.error(f"{icon} Rain Expected")
         st.balloons()
     else:
-        st.success(f"{icon} ☀ Clear Weather")
+        st.success(f"{icon} Clear Weather")
         st.snow()
 
-    # CONFIDENCE BAR
+    # CONFIDENCE
     st.markdown("### 📊 Rain Probability")
     st.progress(int(prob*100))
     st.write(f"{prob*100:.2f}% chance of rain")
 
     # GRAPH
-    st.markdown("### 📈 Weather Trend")
+    st.markdown("### 📈 Weather Pattern")
 
     features = ["Temp","Humidity","Pressure","Wind","Rain"]
     values = [temp, hum, pres/10, wind, rainf]
 
     fig, ax = plt.subplots()
     ax.plot(features, values, marker='o')
-    ax.set_title("Live Weather Pattern")
+    ax.set_title("Weather Trend")
     st.pyplot(fig)
 
 # ==========================================
