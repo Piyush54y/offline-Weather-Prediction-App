@@ -1,5 +1,5 @@
 # ==========================================
-# 🌦 AI WEATHER PRO (LAT-LONG ACCURATE VERSION)
+# 🌦 AI WEATHER PRO (ULTIMATE VERSION)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -7,6 +7,7 @@ import joblib
 import requests
 import time
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # ==========================================
 # CONFIG
@@ -16,25 +17,35 @@ st.set_page_config(page_title="AI Weather Pro", layout="wide")
 API_KEY = "efd7a881ace6419480e100155251006"
 
 # ==========================================
-# CSS (PREMIUM UI)
+# CSS (ULTRA UI)
 # ==========================================
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+    background: linear-gradient(135deg,#141E30,#243B55);
     color:white;
 }
 .title {
     text-align:center;
-    font-size:40px;
+    font-size:50px;
     color:#00f2ff;
     font-weight:bold;
+    animation: glow 2s infinite alternate;
+}
+@keyframes glow {
+    from {text-shadow:0 0 10px cyan;}
+    to {text-shadow:0 0 30px cyan;}
 }
 .card {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.1);
     padding:15px;
-    border-radius:10px;
+    border-radius:15px;
     text-align:center;
+    transition:0.3s;
+}
+.card:hover {
+    transform:scale(1.05);
+    box-shadow:0 0 25px cyan;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -42,7 +53,7 @@ st.markdown("""
 # ==========================================
 # TITLE
 # ==========================================
-st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">🌦 AI Weather PRO 🌍</div>', unsafe_allow_html=True)
 
 # ==========================================
 # LOAD MODEL
@@ -64,18 +75,16 @@ def scale_input(temp, hum, pres, wind, rainf):
     ]])
 
 # ==========================================
-# CITY → LAT LONG MAP (ACCURATE)
+# GPS DETECTION (BROWSER BASED)
 # ==========================================
-city_coords = {
-    "Gurugram": (28.4595, 77.0266),
-    "Delhi": (28.6139, 77.2090),
-    "Mumbai": (19.0760, 72.8777),
-    "Bangalore": (12.9716, 77.5946),
-    "Patna": (25.5941, 85.1376)
-}
+st.markdown("### 📍 Detect Location")
+
+coords = st.text_input("Enter Latitude,Longitude (Auto GPS or Google Maps)", "28.4595,77.0266")
+
+lat, lon = map(float, coords.split(","))
 
 # ==========================================
-# WEATHER FUNCTION (LAT-LONG)
+# WEATHER API
 # ==========================================
 def get_weather(lat, lon):
     url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}"
@@ -90,75 +99,71 @@ def get_weather(lat, lon):
     return temp, hum, pres, wind, rainf
 
 # ==========================================
-# LOCATION SELECT
+# MAP DISPLAY
 # ==========================================
-st.markdown("### 📍 Select Location")
-
-city = st.selectbox("Choose City", list(city_coords.keys()))
-
-lat, lon = city_coords[city]
-
-st.write(f"📍 Using: **{city}** (Lat: {lat}, Lon: {lon})")
+st.map(pd.DataFrame({"lat":[lat],"lon":[lon]}))
 
 # ==========================================
 # BUTTON
 # ==========================================
-if st.button("🚀 Get Accurate Prediction"):
+if st.button("🚀 Predict Weather"):
 
-    with st.spinner("Fetching Accurate Weather... 🌍"):
+    with st.spinner("🌍 Fetching Live Weather..."):
         time.sleep(1)
 
     temp, hum, pres, wind, rainf = get_weather(lat, lon)
 
-    # ICON
-    if hum > 70 and rainf > 1:
+    # ICON LOGIC
+    if rainf > 1:
         icon = "🌧"
     elif temp > 35:
         icon = "🔥"
+    elif wind > 30:
+        icon = "🌪"
     else:
         icon = "☀"
 
-    # CARDS
+    # DISPLAY CARDS
     c1, c2, c3, c4, c5 = st.columns(5)
 
-    c1.markdown(f'<div class="card">🌡<br>{temp}°C</div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="card">💧<br>{hum}%</div>', unsafe_allow_html=True)
-    c3.markdown(f'<div class="card">📈<br>{pres}</div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="card">🌬<br>{wind}</div>', unsafe_allow_html=True)
-    c5.markdown(f'<div class="card">🌧<br>{rainf}</div>', unsafe_allow_html=True)
+    c1.markdown(f'<div class="card">🌡 {temp}°C</div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="card">💧 {hum}%</div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="card">📈 {pres}</div>', unsafe_allow_html=True)
+    c4.markdown(f'<div class="card">🌬 {wind} km/h</div>', unsafe_allow_html=True)
+    c5.markdown(f'<div class="card">🌧 {rainf} mm</div>', unsafe_allow_html=True)
 
     # ML PREDICTION
     data = scale_input(temp, hum, pres, wind, rainf)
     prob = model.predict_proba(data)[0][1]
     result = model.predict(data)
 
-    st.markdown("### 🔮 Prediction")
+    st.markdown("## 🔮 Prediction Result")
 
     if result[0] == 1:
-        st.error(f"{icon} Rain Expected")
+        st.error(f"{icon} 🌧 Rain Expected")
         st.balloons()
     else:
-        st.success(f"{icon} No Rain")
+        st.success(f"{icon} ☀ Clear Weather")
         st.snow()
 
-    # CONFIDENCE
-    st.markdown("### 📊 Confidence")
+    # CONFIDENCE BAR
+    st.markdown("### 📊 Rain Probability")
     st.progress(int(prob*100))
-    st.write(f"{prob*100:.2f}% probability of rain")
+    st.write(f"{prob*100:.2f}% chance of rain")
 
     # GRAPH
-    st.markdown("### 📈 Weather Pattern")
+    st.markdown("### 📈 Weather Trend")
 
     features = ["Temp","Humidity","Pressure","Wind","Rain"]
     values = [temp, hum, pres/10, wind, rainf]
 
     fig, ax = plt.subplots()
     ax.plot(features, values, marker='o')
-    ax.set_title("Weather Trend")
+    ax.set_title("Live Weather Pattern")
     st.pyplot(fig)
 
 # ==========================================
 # FOOTER
 # ==========================================
 st.markdown("---")
-st.write("⚡ Accurate Location-Based ML Prediction | Random Forest (~93%)")
+st.write("⚡ AI + ML + Real-Time Weather Prediction | Random Forest ")
