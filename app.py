@@ -1,5 +1,5 @@
 # ==========================================
-# 🌦 AI WEATHER PRO (FINAL PRO VERSION)
+# 🌦 AI WEATHER ULTRA PRO (MOBILE UI STYLE)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -12,35 +12,74 @@ import pandas as pd
 # ==========================================
 # CONFIG
 # ==========================================
-st.set_page_config(page_title="AI Weather Pro", layout="wide")
+st.set_page_config(page_title="Weather Pro", layout="wide")
 
 API_KEY = "efd7a881ace6419480e100155251006"
 
 # ==========================================
-# CSS
+# ULTRA CSS (MOBILE APP STYLE 🔥)
 # ==========================================
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg,#141E30,#243B55);
+    background: linear-gradient(-45deg,#0f2027,#203a43,#2c5364,#1c92d2);
+    background-size:400% 400%;
+    animation: gradientBG 12s ease infinite;
     color:white;
 }
-.title {
+
+/* Background animation */
+@keyframes gradientBG {
+    0% {background-position:0% 50%;}
+    50% {background-position:100% 50%;}
+    100% {background-position:0% 50%;}
+}
+
+/* Header */
+.header {
     text-align:center;
-    font-size:45px;
+    font-size:50px;
+    font-weight:bold;
     color:#00f2ff;
+    text-shadow:0 0 20px cyan;
+}
+
+/* Big weather display */
+.big {
+    text-align:center;
+    font-size:60px;
     font-weight:bold;
 }
+
+/* Glass cards */
 .card {
     background: rgba(255,255,255,0.1);
-    padding:15px;
-    border-radius:12px;
+    backdrop-filter: blur(12px);
+    padding:20px;
+    border-radius:20px;
     text-align:center;
+    transition:0.3s;
+}
+
+.card:hover {
+    transform:scale(1.05);
+    box-shadow:0 0 25px cyan;
+}
+
+/* Buttons */
+.stButton>button {
+    background: linear-gradient(45deg,#00f2ff,#0072ff);
+    color:white;
+    border-radius:10px;
+    font-weight:bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
+# ==========================================
+# TITLE
+# ==========================================
+st.markdown('<div class="header">🌦 Weather AI PRO</div>', unsafe_allow_html=True)
 
 # ==========================================
 # LOAD MODEL
@@ -48,7 +87,7 @@ st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_al
 model = joblib.load("weather_model.pkl")
 
 # ==========================================
-# SCALE
+# SCALE FUNCTION
 # ==========================================
 def scale_input(temp, hum, pres, wind, rainf):
     return np.array([[
@@ -95,8 +134,7 @@ def get_forecast(lat, lon):
     url = f"http://api.weatherapi.com/v1/forecast.json?key={API_KEY}&q={lat},{lon}&days=7"
     data = requests.get(url).json()
 
-    days = []
-    temps = []
+    days, temps = [], []
 
     for d in data["forecast"]["forecastday"]:
         days.append(d["date"])
@@ -105,98 +143,93 @@ def get_forecast(lat, lon):
     return days, temps
 
 # ==========================================
-# UI TABS
+# CITY SELECT
 # ==========================================
-tab1, tab2 = st.tabs(["🌦 Prediction", "📊 Forecast"])
-
-# ==========================================
-# TAB 1: PREDICTION
-# ==========================================
-with tab1:
-
-    st.markdown("### 📍 Select City")
-    city = st.selectbox("Choose city:", list(city_coords.keys()))
-    lat, lon = city_coords[city]
-
-    if st.button("🚀 Get Prediction"):
-
-        temp, hum, pres, wind, rainf = get_weather(lat, lon)
-
-        # ICON
-        if rainf > 1:
-            icon = "🌧"
-        elif temp > 35:
-            icon = "🔥"
-        else:
-            icon = "☀"
-
-        # CARDS
-        c1,c2,c3,c4,c5 = st.columns(5)
-        c1.metric("🌡 Temp", f"{temp}°C")
-        c2.metric("💧 Humidity", f"{hum}%")
-        c3.metric("📈 Pressure", pres)
-        c4.metric("🌬 Wind", wind)
-        c5.metric("🌧 Rainfall", rainf)
-
-        # ML
-        data = scale_input(temp, hum, pres, wind, rainf)
-        prob = model.predict_proba(data)[0][1]
-        result = model.predict(data)
-
-        st.markdown("## 🔮 Prediction")
-
-        if result[0] == 1:
-            st.error(f"{icon} Rain Expected")
-        else:
-            st.success(f"{icon} Clear Weather")
-
-        # CONFIDENCE
-        st.progress(int(prob*100))
-        st.write(f"{prob*100:.2f}% probability")
-
-        # EXPLAINABLE AI
-        st.markdown("### 🧠 Why?")
-        if hum > 70:
-            st.write("✔ High humidity increases rain chance")
-        if pres < 1000:
-            st.write("✔ Low pressure supports rainfall")
-
-        # DOWNLOAD
-        df = pd.DataFrame({
-            "Temp":[temp],"Humidity":[hum],
-            "Prediction":[result[0]]
-        })
-
-        st.download_button("📥 Download Report", df.to_csv(), "report.csv")
+city = st.selectbox("📍 Select City", list(city_coords.keys()))
+lat, lon = city_coords[city]
 
 # ==========================================
-# TAB 2: FORECAST
+# MAIN BUTTON
 # ==========================================
-with tab2:
+if st.button("🚀 Get Weather"):
 
+    temp, hum, pres, wind, rainf = get_weather(lat, lon)
+
+    # ICON + STATUS
+    if rainf > 1:
+        icon = "🌧"
+        status = "Rainy"
+    elif temp > 35:
+        icon = "🔥"
+        status = "Hot"
+    else:
+        icon = "☀"
+        status = "Clear"
+
+    # BIG DISPLAY
+    st.markdown(f"""
+    <div class="big">{icon} {temp}°C</div>
+    <h3 style="text-align:center;">{status} Weather</h3>
+    """, unsafe_allow_html=True)
+
+    # CARDS
+    c1,c2,c3,c4,c5 = st.columns(5)
+
+    c1.markdown(f'<div class="card">🌡<br>{temp}°C</div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="card">💧<br>{hum}%</div>', unsafe_allow_html=True)
+    c3.markdown(f'<div class="card">📈<br>{pres}</div>', unsafe_allow_html=True)
+    c4.markdown(f'<div class="card">🌬<br>{wind}</div>', unsafe_allow_html=True)
+    c5.markdown(f'<div class="card">🌧<br>{rainf}</div>', unsafe_allow_html=True)
+
+    # ML PREDICTION
+    data = scale_input(temp, hum, pres, wind, rainf)
+    prob = model.predict_proba(data)[0][1]
+    result = model.predict(data)
+
+    st.markdown("### 🔮 Prediction")
+
+    if result[0] == 1:
+        st.error("🌧 Rain Expected")
+    else:
+        st.success("☀ Clear Weather")
+
+    # CONFIDENCE
+    st.progress(int(prob*100))
+    st.write(f"Rain Probability: {prob*100:.2f}%")
+
+    # EXPLAINABLE AI
+    st.markdown("### 🧠 Why Prediction?")
+    if hum > 70:
+        st.write("✔ High humidity → rain chance")
+    if pres < 1000:
+        st.write("✔ Low pressure → rainfall likely")
+
+    # FORECAST
     st.markdown("### 📅 7-Day Forecast")
 
-    city = st.selectbox("Select city for forecast:", list(city_coords.keys()), key="forecast")
-    lat, lon = city_coords[city]
-
     days, temps = get_forecast(lat, lon)
-
-    # CHART
     st.line_chart(temps)
 
-    # TABLE
-    forecast_df = pd.DataFrame({
-        "Day": days,
-        "Avg Temp": temps
+    # GRAPH
+    st.markdown("### 📊 Weather Insights")
+
+    fig, ax = plt.subplots()
+    ax.plot(["Temp","Humidity","Pressure","Wind","Rain"],
+            [temp, hum, pres/10, wind, rainf], marker='o')
+    st.pyplot(fig)
+
+    # DOWNLOAD
+    df = pd.DataFrame({
+        "Temp":[temp],
+        "Humidity":[hum],
+        "Prediction":[result[0]]
     })
 
-    st.dataframe(forecast_df)
+    st.download_button("📥 Download Report", df.to_csv(), "weather.csv")
 
 # ==========================================
 # LIVE MODE
 # ==========================================
-st.markdown("---")
-
 if st.checkbox("🔄 Live Mode"):
     time.sleep(3)
     st.rerun()
@@ -204,4 +237,4 @@ if st.checkbox("🔄 Live Mode"):
 # ==========================================
 # FOOTER
 # ==========================================
-st.write("⚡ ML + Real-Time Weather | Random Forest (~93%)")
+st.write("⚡ AI + ML + Real-Time Weather | Premium UI")
