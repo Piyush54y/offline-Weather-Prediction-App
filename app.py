@@ -1,5 +1,5 @@
 # ==========================================
-# 🌦 AI WEATHER PRO (AQI + PREDICTION)
+# 🌦 AI WEATHER PRO (FINAL FIXED VERSION)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -12,7 +12,7 @@ import pandas as pd
 # ==========================================
 # CONFIG
 # ==========================================
-st.set_page_config(page_title="Weather Pro", layout="wide")
+st.set_page_config(page_title="Weather Prediction Pro", layout="wide")
 
 API_KEY = "efd7a881ace6419480e100155251006"
 
@@ -86,32 +86,35 @@ city_coords = {
 }
 
 # ==========================================
-# WEATHER + AQI API
+# WEATHER + AQI
 # ==========================================
 def get_weather_aqi(lat, lon):
     url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={lat},{lon}&aqi=yes"
     data = requests.get(url).json()
 
-    temp = data["current"]["temp_c"]
-    hum = data["current"]["humidity"]
-    pres = data["current"]["pressure_mb"]
-    wind = data["current"]["wind_kph"]
-    rainf = data["current"].get("precip_mm", 0)
-
-    aqi = data["current"]["air_quality"]["pm2_5"]
-
-    return temp, hum, pres, wind, rainf, aqi
+    return (
+        data["current"]["temp_c"],
+        data["current"]["humidity"],
+        data["current"]["pressure_mb"],
+        data["current"]["wind_kph"],
+        data["current"].get("precip_mm", 0),
+        data["current"]["air_quality"]["pm2_5"]
+    )
 
 # ==========================================
-# AQI STATUS
+# AQI STATUS FIXED
 # ==========================================
 def aqi_status(aqi):
     if aqi <= 50:
         return "🟢 Good"
     elif aqi <= 100:
         return "🟡 Moderate"
-    else:
+    elif aqi <= 150:
+        return "🟠 Unhealthy (Sensitive)"
+    elif aqi <= 200:
         return "🔴 Poor"
+    else:
+        return "🟣 Very Poor"
 
 # ==========================================
 # CITY SELECT
@@ -153,10 +156,19 @@ if st.button("🚀 Get Weather"):
     c5.markdown(f'<div class="card">🌧<br>{rainf}</div>', unsafe_allow_html=True)
     c6.markdown(f'<div class="card">🌫 AQI<br>{aqi:.1f}</div>', unsafe_allow_html=True)
 
-    # AQI STATUS
-    st.markdown(f"### 🌫 Air Quality: {aqi_status(aqi)}")
+    # AQI COLOR STATUS
+    aqi_val = aqi_status(aqi)
 
+    if "Good" in aqi_val:
+        st.success(f"🌫 Air Quality: {aqi_val}")
+    elif "Moderate" in aqi_val:
+        st.warning(f"🌫 Air Quality: {aqi_val}")
+    else:
+        st.error(f"🌫 Air Quality: {aqi_val}")
+
+    # ==========================================
     # ML PREDICTION
+    # ==========================================
     data = scale_input(temp, hum, pres, wind, rainf)
     prob = model.predict_proba(data)[0][1]
     result = model.predict(data)
@@ -168,18 +180,34 @@ if st.button("🚀 Get Weather"):
     else:
         st.success("☀ Clear Weather")
 
-    # CONFIDENCE
     st.progress(int(prob*100))
     st.write(f"Rain Probability: {prob*100:.2f}%")
 
-    # EXPLAINABLE AI
-    st.markdown("### 🧠 Why?")
-    if hum > 70:
-        st.write("✔ High humidity → rain chance")
-    if pres < 1000:
-        st.write("✔ Low pressure → rainfall likely")
+    # ==========================================
+    # EXPLAINABLE AI (FIXED)
+    # ==========================================
+    st.markdown("### 🧠 Why Prediction?")
 
+    reasons = []
+
+    if hum > 70:
+        reasons.append("High humidity increases rain chance")
+    if pres < 1000:
+        reasons.append("Low pressure supports rainfall")
+    if rainf > 0:
+        reasons.append("Recent rainfall detected")
+    if wind > 20:
+        reasons.append("Strong winds influence weather")
+
+    if len(reasons) == 0:
+        st.write("✔ Weather is stable with low rain probability")
+
+    for r in reasons:
+        st.write("✔", r)
+
+    # ==========================================
     # GRAPH
+    # ==========================================
     st.markdown("### 📊 Weather Insights")
 
     fig, ax = plt.subplots()
@@ -197,4 +225,4 @@ if st.checkbox("🔄 Live Mode"):
 # ==========================================
 # FOOTER
 # ==========================================
-st.write("⚡ ML + Real-Time Weather + AQI | Premium UI")
+st.write("⚡ ML + Real-Time Weather Prediction + AQI | Final Version")
