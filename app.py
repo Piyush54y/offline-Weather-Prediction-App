@@ -168,17 +168,40 @@ if mode == "🔮 Prediction":
 # ==========================================
 elif mode == "📊 Model Results":
 
-    st.markdown("## 📊 Model Comparison Table")
+    st.markdown("## 📊 Model Comparison (As per Research Paper)")
 
-    st.dataframe(results_df)
+    # Fixed results (same as your paper)
+    results = [
+        ["Decision Tree", 87, 0.42],
+        ["KNN", 84, 0.10],
+        ["SVM", 90, 1.34],
+        ["Random Forest", 93, 0.95]
+    ]
 
+    df_res = pd.DataFrame(results, columns=["Model","Accuracy (%)","Training Time (s)"])
+
+    st.dataframe(df_res)
+
+    # Highlight Best Model
     st.markdown("### 🏆 Best Model")
-    st.success(f"{best_model_name} with Accuracy = {best_acc:.2f}%")
+    st.success("Random Forest with Accuracy = 93%")
 
-    # Graph
+    # ==========================================
+    # EXCEL STYLE GRAPH (LIKE YOUR PAPER)
+    # ==========================================
+    import numpy as np
+    x = np.arange(len(df_res["Model"]))
+
     fig, ax = plt.subplots()
-    ax.bar(results_df["Model"], results_df["Accuracy (%)"])
-    ax.set_title("Accuracy Comparison")
+
+    ax.bar(x - 0.2, df_res["Accuracy (%)"], width=0.4, label="Accuracy (%)")
+    ax.bar(x + 0.2, df_res["Training Time (s)"], width=0.4, label="Training Time (s)")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(df_res["Model"])
+    ax.set_title("Model Comparison (Accuracy vs Training Time)")
+    ax.legend()
+
     st.pyplot(fig)
 
 # ==========================================
