@@ -1,11 +1,10 @@
 # ==========================================
-# 🌦 AI WEATHER PRO (REAL-TIME + ML + UI)
+# 🌦 AI WEATHER PRO (FINAL STABLE VERSION)
 # ==========================================
 import streamlit as st
 import numpy as np
 import joblib
 import requests
-import random
 import time
 import matplotlib.pyplot as plt
 
@@ -17,7 +16,7 @@ st.set_page_config(page_title="AI Weather Pro", layout="wide")
 API_KEY = "efd7a881ace6419480e100155251006"
 
 # ==========================================
-# CSS (ANIMATED PREMIUM UI)
+# CSS (CLEAN + ANIMATED)
 # ==========================================
 st.markdown("""
 <style>
@@ -27,28 +26,29 @@ st.markdown("""
 }
 .title {
     text-align:center;
-    font-size:45px;
+    font-size:40px;
     font-weight:bold;
     color:#00f2ff;
     animation: glow 2s infinite alternate;
 }
 @keyframes glow {
     from {text-shadow:0 0 10px #00f2ff;}
-    to {text-shadow:0 0 30px #00f2ff;}
+    to {text-shadow:0 0 25px #00f2ff;}
 }
 .card {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     padding:15px;
-    border-radius:12px;
+    border-radius:10px;
     text-align:center;
-    transition:0.3s;
-}
-.card:hover {
-    transform:scale(1.05);
-    box-shadow:0 0 20px cyan;
+    margin:5px;
 }
 </style>
 """, unsafe_allow_html=True)
+
+# ==========================================
+# TITLE
+# ==========================================
+st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
 
 # ==========================================
 # LOAD MODEL
@@ -70,17 +70,17 @@ def scale_input(temp, hum, pres, wind, rainf):
     ]])
 
 # ==========================================
-# AUTO CITY DETECTION
+# AUTO DETECT (FALLBACK ONLY)
 # ==========================================
 def detect_city():
     try:
         res = requests.get("http://ip-api.com/json").json()
-        return res.get("city","Delhi")
+        return res.get("city", "Delhi")
     except:
         return "Delhi"
 
 # ==========================================
-# LIVE WEATHER API
+# WEATHER API
 # ==========================================
 def get_weather(city):
     url = f"http://api.weatherapi.com/v1/current.json?key={API_KEY}&q={city}"
@@ -90,23 +90,36 @@ def get_weather(city):
     hum = data["current"]["humidity"]
     pres = data["current"]["pressure_mb"]
     wind = data["current"]["wind_kph"]
-    rainf = data["current"].get("precip_mm",0)
+    rainf = data["current"].get("precip_mm", 0)
 
     return temp, hum, pres, wind, rainf
 
 # ==========================================
-# TITLE
+# LOCATION SELECTION (FIXED 🔥)
 # ==========================================
-st.markdown('<div class="title">🌦 AI Weather Prediction PRO</div>', unsafe_allow_html=True)
+st.markdown("### 📍 Select Your Location")
+
+auto_city = detect_city()
+
+popular_cities = [
+    "Gurugram", "Delhi", "Mumbai", "Bangalore",
+    "Patna", "Kolkata", "Hyderabad"
+]
+
+city = st.selectbox(
+    "Choose city (or type manually below):",
+    popular_cities
+)
+
+custom_city = st.text_input("Or enter your city manually:", value=city)
+
+if custom_city:
+    city = custom_city
+
+st.write(f"📍 Using Location: **{city}**")
 
 # ==========================================
-# DETECT CITY
-# ==========================================
-city = detect_city()
-st.write(f"📍 Auto Detected Location: **{city}**")
-
-# ==========================================
-# BUTTON
+# MAIN BUTTON
 # ==========================================
 if st.button("🚀 Get Live Prediction"):
 
@@ -146,24 +159,24 @@ if st.button("🚀 Get Live Prediction"):
         st.success(f"{icon} No Rain")
         st.snow()
 
-    # CONFIDENCE BAR
+    # CONFIDENCE
     st.markdown("### 📊 Confidence")
     st.progress(int(prob*100))
     st.write(f"{prob*100:.2f}% probability of rain")
 
-    # CHART
-    st.markdown("### 📈 Weather Trend")
+    # GRAPH
+    st.markdown("### 📈 Weather Pattern")
 
     features = ["Temp","Humidity","Pressure","Wind","Rain"]
     values = [temp, hum, pres/10, wind, rainf]
 
     fig, ax = plt.subplots()
     ax.plot(features, values, marker='o')
-    ax.set_title("Weather Pattern")
+    ax.set_title("Weather Trend")
     st.pyplot(fig)
 
 # ==========================================
 # FOOTER
 # ==========================================
 st.markdown("---")
-st.write("⚡ Powered by ML + Real-Time API | Random Forest (~93%)")
+st.write("⚡ Powered by ML + Real-Time API | Random Forest ")
