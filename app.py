@@ -1,5 +1,5 @@
 # ==========================================
-# AI WEATHER PREDICTION - ULTIMATE APP
+# AI WEATHER APP (FINAL WITH RESULTS + BEST MODEL)
 # ==========================================
 import streamlit as st
 import numpy as np
@@ -9,33 +9,24 @@ import time
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+
 # ==========================================
 # PAGE CONFIG
 # ==========================================
-st.set_page_config(page_title="AI Weather Ultimate", layout="wide")
+st.set_page_config(page_title="AI Weather Pro", layout="wide")
 
 # ==========================================
-# CSS (PREMIUM UI)
+# CSS
 # ==========================================
 st.markdown("""
 <style>
-.stApp {
-    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-    color: white;
-}
-.title {
-    text-align: center;
-    font-size: 45px;
-    color: cyan;
-    font-weight: bold;
-}
-.card {
-    background: rgba(255,255,255,0.08);
-    padding: 15px;
-    border-radius: 10px;
-    text-align: center;
-    margin: 5px;
-}
+.stApp {background: linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:white;}
+.title {text-align:center;font-size:40px;color:cyan;font-weight:bold;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -61,18 +52,94 @@ def scale_input(temp, hum, pres, wind, rainf):
     ]])
 
 # ==========================================
-# MODE SELECTOR
+# GENERATE DATASET (FOR MODEL COMPARISON)
+# ==========================================
+@st.cache_data
+def generate_data():
+    np.random.seed(42)
+    n = 3000
+
+    temp = np.random.uniform(10,45,n)
+    hum = np.random.uniform(20,100,n)
+    pres = np.random.uniform(980,1035,n)
+    wind = np.random.uniform(0,60,n)
+    rainf = np.random.uniform(0,300,n)
+
+    score = (0.65*(hum/100) + 0.25*(rainf/300) +
+             0.07*(1-(pres-980)/55) + 0.03*(temp/45))
+
+    rain = np.where(score > 0.58, 1, 0)
+
+    df = pd.DataFrame({
+        "Temp": temp, "Hum": hum, "Pres": pres,
+        "Wind": wind, "Rainf": rainf, "Rain": rain
+    })
+
+    X = df.drop("Rain", axis=1)
+    y = df["Rain"]
+
+    return X, y
+
+X, y = generate_data()
+
+# ==========================================
+# TRAIN MODELS (FOR COMPARISON)
+# ==========================================
+@st.cache_resource
+def train_models(X, y):
+    from sklearn.model_selection import train_test_split
+
+    X = np.array(X)
+    y = np.array(y)
+
+    X = np.hstack((X, X[:,[0]], X[:,[1]]))
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+    models = {
+        "Decision Tree": DecisionTreeClassifier(max_depth=8),
+        "KNN": KNeighborsClassifier(n_neighbors=7),
+        "SVM": SVC(probability=True),
+        "Random Forest": RandomForestClassifier(n_estimators=150)
+    }
+
+    results = []
+    best_model = None
+    best_acc = 0
+
+    for name, m in models.items():
+        start = time.time()
+        m.fit(X_train, y_train)
+        end = time.time()
+
+        pred = m.predict(X_test)
+        acc = accuracy_score(y_test, pred)*100
+
+        results.append([name, acc, end-start])
+
+        if acc > best_acc:
+            best_acc = acc
+            best_model = name
+
+    df_res = pd.DataFrame(results, columns=["Model","Accuracy (%)","Time (s)"])
+
+    return df_res, best_model, best_acc
+
+results_df, best_model_name, best_acc = train_models(X, y)
+
+# ==========================================
+# SIDEBAR MODE
 # ==========================================
 mode = st.sidebar.radio("Select Mode", [
-    "🔮 Single Prediction",
-    "📊 Dashboard",
+    "🔮 Prediction",
+    "📊 Model Results",
     "🔄 Live Mode"
 ])
 
 # ==========================================
-# SINGLE PREDICTION
+# MODE 1: PREDICTION
 # ==========================================
-if mode == "🔮 Single Prediction":
+if mode == "🔮 Prediction":
 
     if st.button("🚀 Generate Prediction"):
 
@@ -82,75 +149,40 @@ if mode == "🔮 Single Prediction":
         wind = random.randint(0,60)
         rainf = random.randint(0,300)
 
-        col1, col2, col3, col4, col5 = st.columns(5)
-
-        col1.metric("Temp", f"{temp}°C")
-        col2.metric("Humidity", f"{hum}%")
-        col3.metric("Pressure", pres)
-        col4.metric("Wind", wind)
-        col5.metric("Rainfall", rainf)
+        st.write(f"🌡 Temp: {temp}°C | 💧 Humidity: {hum}%")
 
         data = scale_input(temp, hum, pres, wind, rainf)
         prob = model.predict_proba(data)[0][1]
         result = model.predict(data)
 
-        st.markdown("## 🔮 Prediction Result")
-
         if result[0] == 1:
             st.error("🌧 Rain Expected")
-            st.image("https://media.giphy.com/media/26BRrSvJUa0crqw4E/giphy.gif")
         else:
             st.success("☀ No Rain")
-            st.image("https://media.giphy.com/media/l0HlBO7eyXzSZkJri/giphy.gif")
 
-        # Progress bar
         st.progress(int(prob*100))
         st.write(f"Confidence: {prob*100:.2f}%")
 
-        # Explainable AI
-        st.markdown("### 🧠 Why this prediction?")
-        if hum > 70:
-            st.write("✔ High humidity increases rain chance")
-        if rainf > 50:
-            st.write("✔ High rainfall pattern detected")
-        if pres < 1000:
-            st.write("✔ Low pressure supports rainfall")
+# ==========================================
+# MODE 2: RESULTS TABLE ⭐
+# ==========================================
+elif mode == "📊 Model Results":
+
+    st.markdown("## 📊 Model Comparison Table")
+
+    st.dataframe(results_df)
+
+    st.markdown("### 🏆 Best Model")
+    st.success(f"{best_model_name} with Accuracy = {best_acc:.2f}%")
+
+    # Graph
+    fig, ax = plt.subplots()
+    ax.bar(results_df["Model"], results_df["Accuracy (%)"])
+    ax.set_title("Accuracy Comparison")
+    st.pyplot(fig)
 
 # ==========================================
-# DASHBOARD MODE
-# ==========================================
-elif mode == "📊 Dashboard":
-
-    data_list = []
-
-    for _ in range(8):
-        temp = random.randint(10,45)
-        hum = random.randint(20,100)
-        pres = random.randint(980,1035)
-        wind = random.randint(0,60)
-        rainf = random.randint(0,300)
-
-        data = scale_input(temp, hum, pres, wind, rainf)
-        pred = model.predict(data)[0]
-
-        data_list.append([temp, hum, pres, wind, rainf, pred])
-
-    df = pd.DataFrame(data_list, columns=[
-        "Temp","Humidity","Pressure","Wind","Rainfall","Prediction"
-    ])
-
-    st.dataframe(df)
-
-    # Chart
-    st.markdown("### 📈 Temperature Trend")
-    st.line_chart(df["Temp"])
-
-    # Download
-    csv = df.to_csv(index=False).encode()
-    st.download_button("📥 Download Data", csv, "weather.csv")
-
-# ==========================================
-# LIVE MODE
+# MODE 3: LIVE MODE (FIXED)
 # ==========================================
 elif mode == "🔄 Live Mode":
 
@@ -173,12 +205,4 @@ elif mode == "🔄 Live Mode":
         st.success("☀ No Rain")
 
     time.sleep(2)
-    st.experimental_rerun()
-
-# ==========================================
-# MODEL INFO
-# ==========================================
-with st.sidebar.expander("🧠 Model Info"):
-    st.write("Algorithm: Random Forest")
-    st.write("Accuracy: ~93%")
-    st.write("Type: Ensemble Learning")
+    st.rerun()
