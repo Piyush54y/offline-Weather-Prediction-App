@@ -8,21 +8,7 @@ import pydeck as pdk
 import time
 
 st.set_page_config(page_title="WeatherVerse AI Ultimate", layout="wide")
-.stApp{
-background:#0f172a;
-}
 
-.metric-card{
-background:#1e293b;
-padding:20px;
-border-radius:15px;
-box-shadow:0 4px 20px rgba(0,0,0,.2);
-}
-
-h1{
-text-align:center;
-}
-st.markdown('''
 <style>
 .stApp{
 background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
