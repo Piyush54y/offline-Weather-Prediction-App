@@ -9,6 +9,7 @@ import time
 
 st.set_page_config(page_title="WeatherVerse AI Ultimate", layout="wide")
 
+st.markdown('''
 <style>
 .stApp{
 background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
