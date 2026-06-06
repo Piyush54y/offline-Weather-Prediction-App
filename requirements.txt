@@ -3,3 +3,8 @@ scikit-learn
 numpy
 matplotlib
 joblib
+streamlit
+requests
+pandas
+plotly
+pydeck
