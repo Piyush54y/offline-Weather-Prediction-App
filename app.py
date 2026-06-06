@@ -1,6 +1,3 @@
-# WeatherVerse AI Ultimate (Starter Full Version)
-# Place weather_model.pkl in same folder
-
 import streamlit as st
 import requests, joblib, pandas as pd
 import plotly.express as px
