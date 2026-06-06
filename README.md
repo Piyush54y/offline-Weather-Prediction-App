@@ -1,26 +1,31 @@
-# 🌦 AI Weather Prediction System
+# Weather Prediction Using Machine Learning
 
-A lightweight offline weather prediction system using ensemble machine learning.
+## Overview
+This project predicts weather conditions using Machine Learning and historical weather data.
 
-## 🚀 Features
-- Random Forest (~93% accuracy)
-- Offline prediction (no API)
-- Streamlit interactive UI
-- Real-time simulation with random data
+## Features
+- Temperature Prediction
+- Humidity Analysis
+- Weather Forecasting
+- Streamlit Dashboard
+- Data Visualization
 
-## 🧠 Models Used
-- Decision Tree
-- KNN
-- SVM
-- Random Forest (Best)
-- Ensemble Learning
+## Technologies Used
+- Python
+- Pandas
+- NumPy
+- Scikit-Learn
+- Streamlit
+- Matplotlib
 
-## 📊 Output
-- Rain / No Rain prediction
-- Confidence graph
-- Feature visualization
+## Installation
 
-## ▶ Run Locally
-```bash
 pip install -r requirements.txt
+
+## Run Project
+
 streamlit run app.py
+
+## Author
+Piyush Kumar
+MCA - Galgotias University
